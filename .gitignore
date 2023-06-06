@@ -1,0 +1,9 @@
+# Virtual environment:
+venv
+
+# Tokens:
+.env
+
+# Unnecessary project files:
+.vscode
+.mypy_cache
