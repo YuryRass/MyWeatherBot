@@ -1,15 +1,18 @@
-import os
 from typing import Tuple, List
 import requests
 from dotenv import load_dotenv
+from config import Config, load_config
 
 geo_url = 'https://geocode-maps.yandex.ru/1.x/'
 weather_url = 'https://api.weather.yandex.ru/v2/forecast'
 load_dotenv()  # загрузка токенов
 
+config: Config = load_config()
+
 
 def get_weather_coordinates(city: str) -> Tuple[str, str]:
-    payload: dict = {'apikey': os.getenv('GEO_KEY'), 'geocode': city,
+    geo_key: str = config.weather.geo_key
+    payload: dict = {'apikey': geo_key, 'geocode': city,
                      'format': 'json'}
     data: dict = requests.get(geo_url, params=payload).json()
     _coords: dict = data['response']['GeoObjectCollection']["featureMember"][0]
@@ -17,16 +20,20 @@ def get_weather_coordinates(city: str) -> Tuple[str, str]:
     return coords[0], coords[1]  # (широта, долгота)
 
 
-def get_temp_info(lat, lon) -> dict:
+def get_temp_info(lat, lon) -> dict[str, str]:
+    weather_key: str = config.weather.weather_key
     payload: dict = {'lat': lat, 'lon': lon, 'lang': 'ru_RU', 'format': 'json'}
-    headers: dict = {'X-Yandex-API-Key': os.getenv('WEATHER_KEY')}
+    headers: dict = {'X-Yandex-API-Key': weather_key}
     data: dict = requests.get(weather_url, params=payload,
                               headers=headers).json()
-    return data
+    return data['fact']
 
 
-if __name__ == "__main__":
-    city: str = 'Москва'
-    coords: Tuple[str, str] = get_weather_coordinates(city)
+def get_weather(city: str) -> dict[str, str] | None:
+    try:
+        coords: Tuple[str, str] = get_weather_coordinates(city)
+    except Exception as e:
+        print(e)
+        return
     lon, lat = coords
-    print(get_temp_info(lat, lon))
+    return get_temp_info(lat, lon)
